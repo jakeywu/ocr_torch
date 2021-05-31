@@ -1,0 +1,24 @@
+global:
+  infer_det_path: ./output/model_det/dbnet.onnx
+  infer_rec_path: ./output/model_rec/crnn.onnx
+  res_save_dir: ./output/result_liteocr
+  image_dir_or_path: /data/projects/task/ocr_torch/data_loader/data_det/test
+  character_json_path: ./data_loader/data_rec/chinese_chars_6695.json
+
+det:
+  post_process:
+    name: DBPostProcess
+    thresh: 0.3
+    box_thresh: 0.7
+    max_candidates: 1000
+    unclip_ratio: 1.6
+  transforms:
+    - ResizeForTest:
+      long_size: 960
+    - NormalizeImage:
+    - OutputData:
+        keep_keys: ["image", "src_scale"]
+
+rec:
+  post_process:
+    name: CRnnPostProcess

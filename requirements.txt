@@ -1,0 +1,10 @@
+numpy~=1.19.2
+shapely~=1.7.1
+tqdm~=4.60.0
+opencv-python~=4.1.2.30
+onnx~=1.9.0
+onnxruntime~=1.7.0
+imgaug~=0.2.8
+pyclipper~=1.2.1
+torch~=1.8.1
+pyyaml~=5.4.1

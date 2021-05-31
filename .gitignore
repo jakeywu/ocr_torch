@@ -1,0 +1,5 @@
+.pretrained_models/
+.idea/
+*.log
+__pycache__/
+output/

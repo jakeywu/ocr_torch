@@ -1,0 +1,102 @@
+global:
+  yml_type: DET  # 配置类型, 不可更改, 可选值为DET, REC, 分别代表检测和识别
+  use_gpu: false  # 是否使用GPU
+  epochs: 200  # 训练总轮次
+  eval_epoch: 2  # 评估间隔轮次
+  save_pth_dir: ./output/model_det/  # pytorch模型保存地址
+  init_pth_path:  # 初始化模型地址
+  log_iter: 2  # 每隔几个iter输出一次日志
+  save_epoch_iter: 2  # 每隔几个epochs保存一次模型
+
+model:
+  name: DBNet
+  inner_channel: 96
+  k: 50
+  backbone:
+    name: det_mobilenet_v3  # 轻量级backbone
+    pre_trained_dir:     # 默认没有预训练模型, 因为官网提供的mobilenet的multiplier参数为1
+    multiplier: 0.5  # 可选择为0.35, 0.5, 0.75, 1.0, 1.25
+    use_se: false
+#  backbone:
+#    name: resnet18 # 可选值为resnet18, resnet34, resnet50, resnet101, resnet152
+#    pre_trained_dir:
+
+
+loss:
+  name: L1BalanceCELoss  # balance loss + l1 loss + dice loss
+  eps: 0.000001
+  l1_scale: 10
+  bce_scale: 5
+  negative_ratio: 3.0
+
+
+optimizer:
+  name: OptimizerScheduler
+  optim_method: _adam
+  init_learning_rate: 0.001
+  learning_schedule:
+    name: LearningSchedule
+    lr_method: _cosine_warmup
+    warmup_epoch: 2
+
+metrics:
+  name: DetMetric
+  main_indicator: hmean
+
+post_process:
+  name: DBPostProcess
+  thresh: 0.3
+  box_thresh: 0.7
+  max_candidates: 1000
+  unclip_ratio: 1.6
+
+train:
+  dataset:
+    name: DetDataSet
+    data_base_dir: /data/projects/task/ocr_torch/data_loader/data_det/
+    ano_file_path: /data/projects/task/ocr_torch/data_loader/data_det/test.txt
+    do_shuffle: true
+    transforms:
+      - IaaAugment:
+          flip_prob: 0.5
+          affine_rotate: [-5, 5]
+          resize_scale: [0.5, 1.5]
+      - RandomCropData:
+          size: [960, 960]
+          max_tries: 10
+          min_crop_side_ratio: 0.1
+          keep_ratio: true
+      - MakeBorderMap:
+          shrink_ratio: 0.4
+          thresh_min: 0.3
+          thresh_max: 0.7
+      - MakeProbMap:
+          min_text_size: 4
+          shrink_ratio: 0.4
+      - NormalizeImage:
+      - OutputData:
+          keep_keys: ['image', 'thresh_map', 'thresh_mask', 'prob_map', 'prob_mask']
+  dataloader:
+    batch_size: 2
+    num_workers: 0
+    drop_last: true
+    pin_memory: true
+
+
+validate:
+  dataset:
+    name: DetDataSet
+    data_base_dir: /data/projects/task/ocr_torch/data_loader/data_det/
+    ano_file_path: /data/projects/task/ocr_torch/data_loader/data_det/test.txt
+    do_shuffle: false
+    transforms:
+      - ResizeForTest:
+        long_size: 960
+      - NormalizeImage:
+      - OutputData:
+          keep_keys: ["image", "src_scale", "polys", "ignore_tags"]
+  dataloader:
+    batch_size: 1
+    num_workers: 0
+    drop_last: false
+    pin_memory: false
